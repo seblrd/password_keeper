@@ -15,4 +15,4 @@ class Password_data:
         self.data[account] = {"id": id, "password": password}
         
     def edit_account(self, account:str, id:str= "", password:str=""):
-        
+        print("ok")
