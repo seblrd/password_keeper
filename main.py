@@ -7,32 +7,45 @@ class Interface(Frame):
     """Notre fenêtre principale.
     Tous les widgets sont stockés comme attributs de cette fenêtre."""
     
-    def __init__(self, fenetre, **kwargs):
-        Frame.__init__(self, fenetre, width=768, height=576, **kwargs)
+    def __init__(self, windows, **kwargs):
+        # Top frame
+        Frame.__init__(self, windows, width=1500, height=1100, **kwargs)
         self.pack(fill=BOTH)
-        self.nb_clic = 0
-        
-        # Création de nos widgets
-        self.message = Label(self, text="Vous n'avez pas cliqué sur le bouton.")
-        self.message.pack()
-        
-        self.bouton_quitter = Button(self, text="Quitter", command=self.quit)
-        self.bouton_quitter.pack(side="left")
-        
-        self.bouton_cliquer = Button(self, text="Cliquez ici", fg="red",
-                command=self.cliquer)
-        self.bouton_cliquer.pack(side="right")
-    
-    def cliquer(self):
-        """Il y a eu un clic sur le bouton.
-        
-        On change la valeur du label message."""
 
-        self.nb_clic += 1
-        self.message["text"] = "Vous avez cliqué {} fois.".format(self.nb_clic)
+        self.logs = Label(self, text="")
+        self.logs.pack()
+        
+        ## Body frame
+        frame_login = Frame(windows)
+        frame_login.pack()
+        self.message = Label(frame_login, text="Enter password:", justify="left",anchor=W)
+        self.message.pack(side="top",fill=X)
+        #### Child login frame
+        self.password_input = StringVar()
+        self.input_entry_password = Entry(frame_login, textvariable=self.password_input, width=30)
+        self.input_entry_password.pack()
+        self.connect_button = Button(frame_login, text="Connect", command=self.connect)
+        self.connect_button.pack(side="bottom")
 
-fenetre = Tk()
-interface = Interface(fenetre)
+        # Bottom Frame
+        self.exit_button = Button(windows, text="Exit", command=self.quit)
+        self.exit_button.pack(side="bottom")
+
+    def connect(self):
+        input_pass = self.password_input.get()
+        if self.is_password_valid(input_pass):
+            self.logs["text"] = "You're logged."
+        else:
+            self.logs["text"] = "Wrong password."
+            self.logs["fg"] = "red"
+        print("you're in {0}".format(self.password_input.get()))
+    def is_password_valid(self, password):
+        bdd_password= "ok"
+        if password == bdd_password:
+            return True
+        return False
+windows = Tk()
+interface = Interface(windows)
 
 interface.mainloop()
 interface.destroy()
