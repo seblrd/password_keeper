@@ -50,7 +50,7 @@ class Interface(Frame):
             self.logs["fg"] = "red"
 
     def is_password_valid(self, password):
-        bdd_password = ""
+        bdd_password = self.get_password()
         if password == bdd_password:
             return True
         return False
@@ -76,34 +76,62 @@ class Interface(Frame):
         self.display_account_info(self.frame_data)
 
     def display_account_info(self, parent_frame):
+        # Get stored data
         account_infos = self.get_account_data()
+        # Display each element
         for element in account_infos:
             data_elem = account_infos[element]
             data_id = "id: {0}".format(data_elem["id"])
             data_pass = "password: {0}".format(data_elem["password"])
             frame_element = Frame(parent_frame, bg="grey", bd=3)
             frame_element.pack(fill=X)
-
+            # Name of the account ex: Steam, youtube, ...
             account_name = Label(
                 frame_element, text=element, justify="left", anchor=W, font=(12)
             )
             account_name.pack(side="top", fill=X)
-            account_id = Label(frame_element, text=data_id, justify="left", anchor=W)
-            account_id.pack(side="top", fill=X)
+            # Id of the account
+            frame_id = Frame(frame_element)
+            frame_id.pack(side="top", fill=X)
+            account_id = Label(frame_id, text=data_id, justify="left", anchor=W)
+            account_id.pack(side="left", fill=X)
+            self.button_copy_to_clipboard(data_elem["id"], frame_id)
+            # Pass of the account
+            frame_password = Frame(frame_element)
+            frame_password.pack(side="top", fill=X)
             account_password = Label(
-                frame_element, text=data_pass, justify="left", anchor=W
+                frame_password, text=data_pass, justify="left", anchor=W
             )
-            account_password.pack(side="top", fill=X)
+            account_password.pack(side="left", fill=X)
+            self.button_copy_to_clipboard(data_elem["password"], frame_password)
 
     def get_account_data(self):
         import json
 
         with open("./data.json") as data_file:
             data = json.load(data_file)
-        return data["account_infos"]
+            return data["account_infos"]
+
+    def get_password(self):
+        import json
+
+        with open("./data.json") as data_file:
+            data = json.load(data_file)
+            return data["unlock_password"]
 
     def search(self):
         print(self.account_name.get(), type(self.account_name.get()))
+
+    def button_copy_to_clipboard(self, str_to_copy: str, parent_frame):
+        def copy_to_clipboard(str_to_copy):
+            self.clipboard_clear()
+            self.clipboard_append(str(str_to_copy))
+            print(str_to_copy)
+
+        copy_str = Button(
+            parent_frame, text="Copy", command=copy_to_clipboard(str_to_copy)
+        )
+        copy_str.pack(side="right")
 
 
 windows = Tk()

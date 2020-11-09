@@ -2,16 +2,16 @@
 import json
 
 data = {}
-data["unlock_password"] = "1234"
+data["unlock_password"] = ""
 data["account_infos"] = {
-    "ubi": {"id": "mon_id", "password": "password$£"},
-    "steam": {"id": "mon_id", "password": "password"},
+    "ubi": {"id": "mon_id_ubi", "password": "password$£_ubi"},
+    "steam": {"id": "mon_id_steam", "password": "password_steam"},
 }
 with open("data.json", "w") as outfile:
     json.dump(data, outfile, ensure_ascii=False, indent=4)
 
 
-class Password_data:
+class Data:
     def __init__(self):
         self.data = {}
 
