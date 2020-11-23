@@ -1,4 +1,4 @@
 {
-    "python.pythonPath": "C:\\Users\\sebas\\AppData\\Local\\Programs\\Python\\Python39\\python.exe",
+    "python.pythonPath": "c:\\Users\\sebas\\Documents\\WORK\\password_keeper\\.venv\\Scripts\\python.exe",
     "python.formatting.provider": "black"
 }

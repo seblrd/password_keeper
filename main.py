@@ -1,6 +1,13 @@
 #!/usr/bin/python3.9
 # -*-coding:Utf-8 -*
 from tkinter import *
+from data_managing import Data_managing
+import base64
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.fernet import Fernet
+import json
 
 
 class Interface(Frame):
@@ -15,7 +22,11 @@ class Interface(Frame):
 
         self.logs = Label(self, text="")
         self.logs.pack()
-        self.display_login_frame()
+        if self.is_new_account():
+            self.display_register_frame()
+        elif not self.is_new_account():
+            self.display_login_frame()
+
         # Bottom Frame
         self.exit_button = Button(windows, text="Exit", command=self.quit)
         self.exit_button.pack(side="bottom")
@@ -39,99 +50,170 @@ class Interface(Frame):
         )
         self.connect_button.pack(side="bottom")
 
+    def display_register_frame(self):
+        ## Body frame
+        self.frame_register = Frame(windows)
+        self.frame_register.pack()
+        self.message = Label(
+            self.frame_register, text="Enter password:", justify="left", anchor=W
+        )
+        self.message.pack(side="top", fill=X)
+        #### Child login frame
+        # password input
+        password_input = StringVar()
+        input_entry_password = Entry(
+            self.frame_register, textvariable=password_input, width=30, show="*"
+        )
+        input_entry_password.pack()
+        # password confirm input
+        self.message_confirm = Label(
+            self.frame_register,
+            text="Enter password confirmation:",
+            justify="left",
+            anchor=W,
+        )
+        self.message_confirm.pack(side="top", fill=X)
+        password_confirm_input = StringVar()
+        input_entry_password = Entry(
+            self.frame_register,
+            textvariable=password_confirm_input,
+            width=30,
+            show="*",
+        )
+        input_entry_password.pack()
+        # Register button
+        register_button = Button(
+            self.frame_register,
+            text="Register",
+            command=(
+                lambda: self.is_register_pass_valid(
+                    password_input.get(), password_confirm_input.get()
+                )
+            ),
+        )
+        register_button.pack(side="bottom")
+
     def connect(self):
         input_pass = self.password_input.get()
         if self.is_password_valid(input_pass):
             self.logs["text"] = "You're logged."
             self.logs["fg"] = "black"
-            self.display_data_frame()
+            # TODO self.fernet_key = self.create_fernet_key(input_pass)
+            self.display_connected_frame()
         else:
             self.logs["text"] = "Wrong password."
             self.logs["fg"] = "red"
 
     def is_password_valid(self, password):
-        bdd_password = self.get_password()
-        if password == bdd_password:
+        from base64 import b64decode
+        import hashlib
+
+        data = self.get_connect_id()
+        byte_salt = b64decode(data["salt"].encode())
+        password = password.encode()
+        enc_password = hashlib.sha224(password + byte_salt).hexdigest()
+        if enc_password == data["unlock_password"]:
             return True
         return False
 
-    def display_data_frame(self):
+    def display_connected_frame(self):
         # Create data display
         self.frame_login.destroy()
-        self.frame_data = Frame(windows)
-        self.frame_data.pack()
-        self.message = Label(
-            self.frame_data, text="Enter the name of account:", justify="left", anchor=W
-        )
-        self.message.pack(side="top", fill=X)
-        self.account_name = StringVar()
-        self.entry_account = Entry(
-            self.frame_data, textvariable=self.account_name, width=30
-        )
-        self.entry_account.pack()
-        self.button_search = Button(self.frame_data, text="Search", command=self.search)
-        self.button_search.pack(side="bottom")
+        self.frame_connected = Frame(windows)
+        self.frame_connected.pack()
+        # Create class data managing
+        data_manage = Data_managing()
+        data_manage.display_add_new_account(self.frame_connected)
+        data_manage.display_account_info(self.frame_connected)
 
-        # Display data account
-        self.display_account_info(self.frame_data)
-
-    def display_account_info(self, parent_frame):
-        # Get stored data
-        account_infos = self.get_account_data()
-        # Display each element
-        for element in account_infos:
-            data_elem = account_infos[element]
-            data_id = "id: {0}".format(data_elem["id"])
-            data_pass = "password: {0}".format(data_elem["password"])
-            frame_element = Frame(parent_frame, bg="grey", bd=3)
-            frame_element.pack(fill=X)
-            # Name of the account ex: Steam, youtube, ...
-            account_name = Label(
-                frame_element, text=element, justify="left", anchor=W, font=(12)
-            )
-            account_name.pack(side="top", fill=X)
-            # Id of the account
-            frame_id = Frame(frame_element)
-            frame_id.pack(side="top", fill=X)
-            account_id = Label(frame_id, text=data_id, justify="left", anchor=W)
-            account_id.pack(side="left", fill=X)
-            self.button_copy_to_clipboard(data_elem["id"], frame_id)
-            # Pass of the account
-            frame_password = Frame(frame_element)
-            frame_password.pack(side="top", fill=X)
-            account_password = Label(
-                frame_password, text=data_pass, justify="left", anchor=W
-            )
-            account_password.pack(side="left", fill=X)
-            self.button_copy_to_clipboard(data_elem["password"], frame_password)
-
-    def get_account_data(self):
+    def get_connect_id(self):
         import json
 
-        with open("./data.json") as data_file:
+        with open("./main_id.json") as data_file:
             data = json.load(data_file)
-            return data["account_infos"]
+            return data
 
-    def get_password(self):
-        import json
+    def create_fernet_key(self, password: str, salt: bytes):
 
-        with open("./data.json") as data_file:
-            data = json.load(data_file)
-            return data["unlock_password"]
+        password = password.encode()  # Convert to type bytes
 
-    def search(self):
-        print(self.account_name.get(), type(self.account_name.get()))
-
-    def button_copy_to_clipboard(self, str_to_copy: str, parent_frame):
-        def copy_to_clipboard(str_to_copy):
-            self.clipboard_clear()
-            self.clipboard_append(str(str_to_copy))
-            print(str_to_copy)
-
-        copy_str = Button(
-            parent_frame, text="Copy", command=copy_to_clipboard(str_to_copy)
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=salt,
+            iterations=100000,
+            backend=default_backend(),
         )
-        copy_str.pack(side="right")
+        key = base64.urlsafe_b64encode(kdf.derive(password))  # Can only use kdf once
+
+        f = Fernet(key)
+        return f
+
+    def is_new_account(self):
+        try:
+            with open("main_id.json", "r") as f:
+                data = json.load(f)
+                print(data["unlock_password"], data["salt"])
+                print("Account found")
+                return False
+
+        except:
+            print("No account was found")
+            return True
+
+    def is_register_pass_valid(self, password: str, password_confim: str):
+        self.log = ""
+
+        def check_pass(password, password_confim):
+            log = ""
+            if len(password) < 8:
+                log += "\nPassword length < 8"
+
+            if password != password_confim:
+                log += "\nConfirm password doesn't match password"
+            if log == "":
+                return True
+            else:
+                self.log = "Incorrect register password." + log
+                return False
+
+        if check_pass(password, password_confim):
+            self.logs["text"] = ""
+            self.create_new_user(password)
+            return True
+        else:
+            self.logs["text"] = self.log
+            self.logs["fg"] = "red"
+            return False
+
+    def create_new_user(self, password: str):
+        import os
+        import hashlib
+        from base64 import b64encode
+
+        try:
+            salt = os.urandom(16)
+            password = password.encode()
+            enc_password = hashlib.sha224(password + salt).hexdigest()
+            # To store byte salt in Json we need to convert it yo str
+            str_salt = b64encode(salt).decode("utf8")
+
+            data = {"unlock_password": enc_password, "salt": str_salt}
+
+            with open("./main_id.json", "w") as data_file:
+                json.dump(data, data_file, ensure_ascii=False, indent=4)
+            self.logs["text"] = "User created"
+            self.logs["fg"] = "black"
+            self.frame_register.destroy()
+            self.display_login_frame()
+        except Exception as e:
+            self.logs["text"] = "Error in creating User"
+            self.logs["fg"] = "red"
+            print(e)
+            try:
+                os.remove("./main_id.json")
+            except:
+                pass
 
 
 windows = Tk()
