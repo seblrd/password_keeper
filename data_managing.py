@@ -1,7 +1,13 @@
-from tkinter import *
+from tkinter import *  # pylint: disable=unused-wildcard-import
+import json
 
 
 class Data_managing(Frame):
+    def __init__(self, fernet_key, account_password):
+        self.account_data = {}
+        self.fernet_key = fernet_key
+        self.account_password = account_password
+
     def display_add_new_account(self, parent_frame):
         self.display = False
 
@@ -25,6 +31,7 @@ class Data_managing(Frame):
     def display_account_info(self, parent_frame):
         # Get stored data
         account_infos = self.get_account_data()
+        self.account_data = account_infos
         # Display each element
         for element in account_infos:
             data_elem = account_infos[element]
@@ -53,11 +60,16 @@ class Data_managing(Frame):
             self.button_copy_to_clipboard(data_elem["password"], frame_password)
 
     def get_account_data(self):
-        import json
+        def decrypt_data(byte_to_decode: bytes):
+            f = self.fernet_key
+            decrypted = f.decrypt(byte_to_decode)
+            return decrypted
 
-        with open("./data.json") as data_file:
-            data = json.load(data_file)
-            return data["account_infos"]
+        with open("data.encrypted", "rb") as f:
+            data = f.read()
+            data = decrypt_data(data).decode()
+            data = json.loads(data)
+            return data
 
     def button_copy_to_clipboard(self, str_to_copy: str, parent_frame):
         def copy_to_clipboard(str_to_copy):
@@ -124,4 +136,16 @@ class Data_managing(Frame):
         label_account_password.pack()
 
     def store_new_account(self, name: str, id: str, password: str):
-        print(name, id, password)
+        data_to_store = self.account_data
+        name = name.capitalize()
+        data_to_store[name] = {"id": id, "password": password}
+
+        def encrypt_data(data_to_store: dict):
+            data_to_store = json.dumps(data_to_store).encode("utf-8")
+            f = self.fernet_key
+            encrypt = f.encrypt(data_to_store)
+            return encrypt
+
+        enc = encrypt_data(data_to_store)
+        with open("data.encrypted", "wb") as f:
+            f.write(enc)

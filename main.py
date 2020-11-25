@@ -1,6 +1,6 @@
 #!/usr/bin/python3.9
 # -*-coding:Utf-8 -*
-from tkinter import *
+from tkinter import *  # pylint: disable=unused-wildcard-import
 from data_managing import Data_managing
 import base64
 from cryptography.hazmat.backends import default_backend
@@ -19,14 +19,15 @@ class Interface(Frame):
         # Top frame
         Frame.__init__(self, windows, width=1500, height=1100, **kwargs)
         self.pack(fill=BOTH)
-
+        self.password = ""
+        self.salt = ""
         self.logs = Label(self, text="")
         self.logs.pack()
+        self.fernet_key = ""
         if self.is_new_account():
             self.display_register_frame()
         elif not self.is_new_account():
             self.display_login_frame()
-
         # Bottom Frame
         self.exit_button = Button(windows, text="Exit", command=self.quit)
         self.exit_button.pack(side="bottom")
@@ -96,23 +97,25 @@ class Interface(Frame):
     def connect(self):
         input_pass = self.password_input.get()
         if self.is_password_valid(input_pass):
+
             self.logs["text"] = "You're logged."
             self.logs["fg"] = "black"
-            # TODO self.fernet_key = self.create_fernet_key(input_pass)
             self.display_connected_frame()
         else:
             self.logs["text"] = "Wrong password."
             self.logs["fg"] = "red"
 
-    def is_password_valid(self, password):
+    def is_password_valid(self, password: str):
         from base64 import b64decode
         import hashlib
 
         data = self.get_connect_id()
         byte_salt = b64decode(data["salt"].encode())
-        password = password.encode()
-        enc_password = hashlib.sha224(password + byte_salt).hexdigest()
+        byte_password = password.encode()
+        enc_password = hashlib.sha224(byte_password + byte_salt).hexdigest()
         if enc_password == data["unlock_password"]:
+            self.salt = byte_salt
+            self.fernet_key = self.create_fernet_key(password, byte_salt)
             return True
         return False
 
@@ -122,7 +125,7 @@ class Interface(Frame):
         self.frame_connected = Frame(windows)
         self.frame_connected.pack()
         # Create class data managing
-        data_manage = Data_managing()
+        data_manage = Data_managing(self.fernet_key, self.password)
         data_manage.display_add_new_account(self.frame_connected)
         data_manage.display_account_info(self.frame_connected)
 
@@ -153,9 +156,11 @@ class Interface(Frame):
         try:
             with open("main_id.json", "r") as f:
                 data = json.load(f)
-                print(data["unlock_password"], data["salt"])
-                print("Account found")
-                return False
+                if data["unlock_password"] != "" and data["salt"] != "":
+                    print("Account found")
+                    return False
+                print("Some errors has occured in loading ID of account")
+                return True
 
         except:
             print("No account was found")
@@ -193,6 +198,9 @@ class Interface(Frame):
 
         try:
             salt = os.urandom(16)
+            self.salt = salt
+            self.password = password
+            self.fernet_key = self.create_fernet_key(password, salt)
             password = password.encode()
             enc_password = hashlib.sha224(password + salt).hexdigest()
             # To store byte salt in Json we need to convert it yo str
