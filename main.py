@@ -22,7 +22,7 @@ class Interface(Frame):
         self.password = ""
         self.salt = ""
         self.logs = Label(self, text="")
-        self.logs.pack()
+        self.logs.pack(fill=BOTH, expand=False)
         self.fernet_key = ""
         if self.is_new_account():
             self.display_register_frame()
@@ -35,7 +35,7 @@ class Interface(Frame):
     def display_login_frame(self):
         ## Body frame
         self.frame_login = Frame(windows)
-        self.frame_login.pack()
+        self.frame_login.pack(fill=BOTH, expand=True)
         self.message = Label(
             self.frame_login, text="Enter password:", justify="left", anchor=W
         )
@@ -54,7 +54,7 @@ class Interface(Frame):
     def display_register_frame(self):
         ## Body frame
         self.frame_register = Frame(windows)
-        self.frame_register.pack()
+        self.frame_register.pack(fill=BOTH, expand=True)
         self.message = Label(
             self.frame_register, text="Enter password:", justify="left", anchor=W
         )
@@ -96,6 +96,7 @@ class Interface(Frame):
 
     def connect(self):
         input_pass = self.password_input.get()
+        input_pass = "password"  # TODO to delete
         if self.is_password_valid(input_pass):
 
             self.logs["text"] = "You're logged."
@@ -123,11 +124,13 @@ class Interface(Frame):
         # Create data display
         self.frame_login.destroy()
         self.frame_connected = Frame(windows)
-        self.frame_connected.pack()
+        self.frame_connected.pack(fill=BOTH, expand=True)
         # Create class data managing
-        data_manage = Data_managing(self.fernet_key, self.password)
-        data_manage.display_add_new_account(self.frame_connected)
-        data_manage.display_account_info(self.frame_connected)
+        data_manage = Data_managing(
+            self.fernet_key, self.password, self.frame_connected
+        )
+        data_manage.display_add_new_account()
+        data_manage.display_account_info()
 
     def get_connect_id(self):
         import json
