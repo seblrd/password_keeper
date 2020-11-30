@@ -22,7 +22,7 @@ class Data_managing(Frame):
                 self.display = False
 
         self.frame_new_account = Frame(self.parent_frame)
-        self.frame_new_account.pack(side="top", fill=BOTH)
+        self.frame_new_account.pack(fill=BOTH)
         self.button_display_add_account = Button(
             self.frame_new_account,
             text="Add new account",
@@ -32,19 +32,24 @@ class Data_managing(Frame):
 
     def display_account_info(self):
         # Get stored data
-        self.frame_account_infos = Frame(self.parent_frame)
+        self.frame_account_infos = Frame(self.parent_frame, bg="grey", bd=4)
         self.frame_account_infos.pack(fill=BOTH, expand=True)
+        canvas_child = Canvas(self.frame_account_infos)
 
-        scrollbar = Scrollbar(self.frame_account_infos, orient="vertical")
-        canvas_child = Canvas(self.frame_account_infos, yscrollcommand=scrollbar.set)
-        scrollbar.config(command=canvas_child.yview)
+        self.frame_child = Frame(canvas_child)
+        self.frame_child.pack(fill=X, expand=True)
+        scrollbar = Scrollbar(
+            self.frame_account_infos, orient="vertical", command=canvas_child.yview
+        )
+        self.frame_child.bind(
+            "<Configure>",
+            lambda e: canvas_child.configure(scrollregion=canvas_child.bbox("all")),
+        )
+        canvas_child.create_window(0, 0, window=self.frame_child, anchor="nw")
+        canvas_child.configure(yscrollcommand=scrollbar.set)
+
         scrollbar.pack(side=RIGHT, fill=Y, expand=True)
-        canvas_child.config(yscrollcommand=scrollbar.set)
         canvas_child.pack(side=LEFT, fill=BOTH, expand=True)
-
-        frame_child = Frame(self.frame_account_infos)
-        frame_child.pack(fill=BOTH, expand=True)
-        canvas_child.create_window(0, 0, window=frame_child)
 
         # Getting data to display
         account_infos = self.get_account_data()
@@ -55,12 +60,12 @@ class Data_managing(Frame):
             data_id = "id: {0}".format(data_elem["id"])
             data_pass = "password: {0}".format(data_elem["password"])
 
-            self.frame_element = Frame(frame_child, bg="grey", bd=3)
-            self.frame_element.pack(fill=BOTH, expand=True)
+            self.frame_element = Frame(self.frame_child, bg="grey", bd=2)
+            self.frame_element.pack(fill=X)
 
             # Name of the account ex: Steam, youtube, ...
             frame_account_name = Frame(self.frame_element)
-            frame_account_name.pack(side=TOP, fill=BOTH)
+            frame_account_name.pack(side=TOP, fill=BOTH, anchor="center")
             account_name = Label(
                 frame_account_name,
                 text=element,
@@ -109,8 +114,12 @@ class Data_managing(Frame):
 
     def button_copy_to_clipboard(self, str_to_copy: str, parent_frame):
         def copy_to_clipboard(str_to_copy):
-            self.clipboard_clear()
-            self.clipboard_append(str(str_to_copy))
+            try:
+                self.parent_frame.clipboard_clear()
+            except Exception as e:
+                print("Cannot clear clipboard: {0}".format(e))
+            finally:
+                self.parent_frame.clipboard_append(str(str_to_copy))
 
         self.copy_str = Button(
             parent_frame, text="Copy", command=(lambda: copy_to_clipboard(str_to_copy))

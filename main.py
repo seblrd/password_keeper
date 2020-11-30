@@ -17,12 +17,12 @@ class Interface(Frame):
 
     def __init__(self, windows, **kwargs):
         # Top frame
-        Frame.__init__(self, windows, width=1500, height=1100, **kwargs)
-        self.pack(fill=BOTH)
+        Frame.__init__(self, windows, width=100, height=1500, **kwargs)
+        self.pack()
         self.password = ""
         self.salt = ""
         self.logs = Label(self, text="")
-        self.logs.pack(fill=BOTH, expand=False)
+        self.logs.pack(fill=BOTH)
         self.fernet_key = ""
         if self.is_new_account():
             self.display_register_frame()
@@ -53,6 +53,8 @@ class Interface(Frame):
 
     def display_register_frame(self):
         ## Body frame
+        self.logs["text"] = "No user detected create new one."
+        self.logs["fg"] = "black"
         self.frame_register = Frame(windows)
         self.frame_register.pack(fill=BOTH, expand=True)
         self.message = Label(
@@ -96,7 +98,6 @@ class Interface(Frame):
 
     def connect(self):
         input_pass = self.password_input.get()
-        input_pass = "password"  # TODO to delete
         if self.is_password_valid(input_pass):
 
             self.logs["text"] = "You're logged."
