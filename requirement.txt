@@ -1,0 +1,2 @@
+cryptography==3.2.1
+cx-Freeze==6.4.1
